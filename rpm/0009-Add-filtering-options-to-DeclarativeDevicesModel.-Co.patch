@@ -87,10 +87,10 @@ diff --git a/src/imports/declarativedevicesmodel.h b/src/imports/declarativedevi
 index 8d034b4..5f0199d 100644
 --- a/src/imports/declarativedevicesmodel.h
 +++ b/src/imports/declarativedevicesmodel.h
-@@ -33,6 +33,8 @@ class DeclarativeDevicesModel : public QSortFilterProxyModel
+@@ -19,6 +19,8 @@ class DeclarativeDevicesModel : public QSortFilterProxyModel
  {
      Q_OBJECT
-     Q_PROPERTY(DeclarativeManager* manager READ manager WRITE setManager)
+     Q_PROPERTY(DeclarativeManager *manager READ manager WRITE setManager)
 +    Q_PROPERTY(DeclarativeDevicesModel::DeclarativeFilters filters READ filters WRITE setFilters NOTIFY filtersChanged)
 +    Q_PROPERTY(QStringList hiddenAddresses READ hiddenAddresses WRITE setHiddenAddresses NOTIFY hiddenAddressesChanged)
  

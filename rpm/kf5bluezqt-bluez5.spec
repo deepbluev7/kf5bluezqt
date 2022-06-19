@@ -1,6 +1,6 @@
 Name:       kf5bluezqt-bluez5
 Summary:    KF5BluezQt - Qt wrapper for BlueZ 5 DBus API
-Version:    5.50.0
+Version:    5.82.0
 Release:    1
 License:    LGPLv2
 URL:        https://github.com/sailfishos/kf5bluezqt
@@ -11,6 +11,7 @@ Conflicts:  kf5bluezqt-bluez4
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Qml)
+BuildRequires:  pkgconfig(Qt5Test)
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
 
@@ -20,7 +21,7 @@ Requires: bluez5
 Requires: bluez5-obexd
 
 Patch1:  0001-Generate-pkgconfig-.pc-file.patch
-Patch2:  0002-Add-MediaTransport-org.bluez.MediaTransport1-wrapper.patch
+#Patch2:  0002-Add-MediaTransport-org.bluez.MediaTransport1-wrapper.patch
 Patch3:  0003-Add-Manager-pairWithDevice-QString-to-pair-with-unkn.patch
 Patch4:  0004-Check-for-object-validity-in-macros.patch
 Patch5:  0005-Don-t-connect-to-signals-with-QVariantMapMap-paramet.patch
@@ -69,7 +70,7 @@ This package contains the development header files for kf5bluezqt
 
 %files
 %defattr(-,root,root,-)
-%license COPYING.LIB
+%license LICENSES/*
 %{_libdir}/libKF5BluezQt.so.*
 %exclude /lib/udev/rules.d/61-kde-bluetooth-rfkill.rules
 %exclude %{_sysconfdir}/xdg/bluez.categories
@@ -86,3 +87,5 @@ This package contains the development header files for kf5bluezqt
 %{_includedir}/KF5/BluezQt
 %{_libdir}/cmake/KF5BluezQt
 %exclude %{_datadir}/qt5/mkspecs/modules/qt_BluezQt.pri
+%exclude %{_datadir}/qlogging-categories5/bluezqt.categories
+%exclude %{_datadir}/qlogging-categories5/bluezqt.renamecategories

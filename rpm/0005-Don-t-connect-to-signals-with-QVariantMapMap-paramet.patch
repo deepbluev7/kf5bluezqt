@@ -31,46 +31,45 @@ diff --git a/src/device_p.cpp b/src/device_p.cpp
 index 54edc42..c67ea5a 100644
 --- a/src/device_p.cpp
 +++ b/src/device_p.cpp
-@@ -87,17 +87,17 @@ void DevicePrivate::interfacesAdded(const QString &path, const QVariantMapMap &i
-     QVariantMapMap::const_iterator it;
- 
-     for (it = interfaces.constBegin(); it != interfaces.constEnd(); ++it) {
--        if (it.key() == Strings::orgBluezInput1()) {
-+        if (it.key() == Strings::orgBluezInput1() && !m_input) {
+@@ -99,17 +99,17 @@ void DevicePrivate::interfacesAdded(const QString &path, const QVariantMapMap &i
+             m_battery->d->q = m_battery.toWeakRef();
+             Q_EMIT q.lock()->batteryChanged(m_battery);
+             changed = true;
+-        } else if (it.key() == Strings::orgBluezInput1()) {
++        } else if (it.key() == Strings::orgBluezInput1() && !m_input) {
              m_input = InputPtr(new Input(path, it.value()));
              m_input->d->q = m_input.toWeakRef();
-             Q_EMIT q.data()->inputChanged(m_input);
+             Q_EMIT q.lock()->inputChanged(m_input);
              changed = true;
 -        } else if (it.key() == Strings::orgBluezMediaPlayer1()) {
 +        } else if (it.key() == Strings::orgBluezMediaPlayer1() && !m_mediaPlayer) {
              m_mediaPlayer = MediaPlayerPtr(new MediaPlayer(path, it.value()));
              m_mediaPlayer->d->q = m_mediaPlayer.toWeakRef();
-             Q_EMIT q.data()->mediaPlayerChanged(m_mediaPlayer);
+             Q_EMIT q.lock()->mediaPlayerChanged(m_mediaPlayer);
              changed = true;
 -        } else if (it.key() == Strings::orgBluezMediaTransport1()) {
 +        } else if (it.key() == Strings::orgBluezMediaTransport1() && !m_mediaTransport) {
              m_mediaTransport = MediaTransportPtr(new MediaTransport(path, it.value()));
              m_mediaTransport->d->q = m_mediaTransport.toWeakRef();
-             Q_EMIT q.data()->mediaTransportChanged(m_mediaTransport);
+             Q_EMIT q.lock()->mediaTransportChanged(m_mediaTransport);
 diff --git a/src/manager_p.cpp b/src/manager_p.cpp
 index 1fd8125..9a0e08a 100644
 --- a/src/manager_p.cpp
 +++ b/src/manager_p.cpp
-@@ -168,8 +168,12 @@ void ManagerPrivate::getManagedObjectsFinished(QDBusPendingCallWatcher *watcher)
+@@ -168,7 +168,12 @@ void ManagerPrivate::getManagedObjectsFinished(QDBusPendingCallWatcher *watcher)
          return;
      }
  
--    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesAdded,
--            this, &ManagerPrivate::interfacesAdded);
+-    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesAdded, this, &ManagerPrivate::interfacesAdded);
 +    DBusConnection::orgBluez().connect(Strings::orgBluez(),
 +                                       QStringLiteral("/"),
 +                                       QStringLiteral("org.freedesktop.DBus.ObjectManager"),
 +                                       QStringLiteral("InterfacesAdded"),
 +                                       this,
 +                                       SLOT(interfacesAddedSlot(QDBusObjectPath)));
-     connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved,
-             this, &ManagerPrivate::interfacesRemoved);
+     connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved, this, &ManagerPrivate::interfacesRemoved);
  
+     m_loaded = true;
 @@ -254,6 +258,34 @@ void ManagerPrivate::serviceUnregistered()
      Q_EMIT q->operationalChanged(false);
  }
@@ -138,28 +137,27 @@ index cc3276d..d7e96b6 100644
      void dummy();
 +    void interfacesAddedSlot(const QDBusObjectPath &objectPath);
 +    void getInterfacesManagedObjectsFinished(QDBusPendingCallWatcher *watcher);
- 
  };
  
+ } // namespace BluezQt
 diff --git a/src/obexmanager_p.cpp b/src/obexmanager_p.cpp
 index 2535b62..05608a8 100644
 --- a/src/obexmanager_p.cpp
 +++ b/src/obexmanager_p.cpp
-@@ -116,8 +116,12 @@ void ObexManagerPrivate::load()
-     m_dbusObjectManager = new DBusObjectManager(Strings::orgBluezObex(), QStringLiteral("/"),
-             DBusConnection::orgBluezObex(), this);
- 
--    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesAdded,
--            this, &ObexManagerPrivate::interfacesAdded);
+@@ -94,7 +94,12 @@ void ObexManagerPrivate::load()
+
+     m_dbusObjectManager = new DBusObjectManager(Strings::orgBluezObex(), QStringLiteral("/"), DBusConnection::orgBluezObex(), this);
+
+-    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesAdded, this, &ObexManagerPrivate::interfacesAdded);
 +    DBusConnection::orgBluezObex().connect(Strings::orgBluezObex(),
 +                                           QStringLiteral("/"),
 +                                           QStringLiteral("org.freedesktop.DBus.ObjectManager"),
 +                                           QStringLiteral("InterfacesAdded"),
 +                                           this,
 +                                           SLOT(interfacesAddedSlot(QDBusObjectPath)));
-     connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved,
-             this, &ObexManagerPrivate::interfacesRemoved);
- 
+     connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved, this, &ObexManagerPrivate::interfacesRemoved);
+
+     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(m_dbusObjectManager->GetManagedObjects(), this);
 @@ -215,6 +219,34 @@ void ObexManagerPrivate::serviceUnregistered()
      Q_EMIT q->operationalChanged(false);
  }

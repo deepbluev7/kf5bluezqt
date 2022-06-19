@@ -85,20 +85,20 @@ index eb5fa9f..1ab0e11 100644
  
 @@ -68,6 +69,8 @@ void AdapterPrivate::addDevice(const DevicePtr &device)
      m_devices.append(device);
-     Q_EMIT q.data()->deviceAdded(device);
+     Q_EMIT q.lock()->deviceAdded(device);
  
 +    deviceConnectedChanged();
 +    connect(device.data(), &Device::connectedChanged, this, &AdapterPrivate::deviceConnectedChanged);
-     connect(device.data(), &Device::deviceChanged, q.data(), &Adapter::deviceChanged);
+     connect(device.data(), &Device::deviceChanged, q.lock().data(), &Adapter::deviceChanged);
  }
  
 @@ -77,6 +80,8 @@ void AdapterPrivate::removeDevice(const DevicePtr &device)
      Q_EMIT device->deviceRemoved(device);
-     Q_EMIT q.data()->deviceRemoved(device);
+     Q_EMIT q.lock()->deviceRemoved(device);
  
 +    deviceConnectedChanged();
 +    disconnect(device.data(), &Device::connectedChanged, this, &AdapterPrivate::deviceConnectedChanged);
-     disconnect(device.data(), &Device::deviceChanged, q.data(), &Adapter::deviceChanged);
+     disconnect(device.data(), &Device::deviceChanged, q.lock().data(), &Adapter::deviceChanged);
  }
  
 @@ -130,4 +135,20 @@ void AdapterPrivate::propertiesChanged(const QString &interface, const QVariantM

@@ -29,7 +29,7 @@ index 38146c2..75b36cc 100644
 +    if (d->m_monitorObjectManagerInterfaces != monitor) {
 +        d->m_monitorObjectManagerInterfaces = monitor;
 +        d->updateObjectManagerConnections();
-+        emit monitorObjectManagerInterfacesChanged(monitor);
++        Q_EMIT monitorObjectManagerInterfacesChanged(monitor);
 +    }
 +}
 +
@@ -100,7 +100,7 @@ index 9a0e08a..c0bc497 100644
  {
      qDBusRegisterMetaType<DBusManagerStruct>();
      qDBusRegisterMetaType<QVariantMapMap>();
-@@ -168,18 +169,11 @@ void ManagerPrivate::getManagedObjectsFinished(QDBusPendingCallWatcher *watcher)
+@@ -168,17 +169,11 @@ void ManagerPrivate::getManagedObjectsFinished(QDBusPendingCallWatcher *watcher)
          return;
      }
  
@@ -110,8 +110,7 @@ index 9a0e08a..c0bc497 100644
 -                                       QStringLiteral("InterfacesAdded"),
 -                                       this,
 -                                       SLOT(interfacesAddedSlot(QDBusObjectPath)));
--    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved,
--            this, &ManagerPrivate::interfacesRemoved);
+-    connect(m_dbusObjectManager, &DBusObjectManager::InterfacesRemoved, this, &ManagerPrivate::interfacesRemoved);
 -
      m_loaded = true;
      m_initialized = true;

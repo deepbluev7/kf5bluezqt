@@ -1,38 +1,133 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Pekka Vuorela <pekka.vuorela@jolla.com>
-Date: Tue, 8 Feb 2022 14:39:18 +0200
-Subject: [PATCH] Build with Qt 5.6
-
----
- CMakeLists.txt                          | 2 +-
- src/imports/declarativedevicesmodel.cpp | 1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
-
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index ed9028e..3c782f0 100644
+index 8457839..2b906a3 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -34,7 +34,7 @@ ecm_setup_version(PROJECT
+@@ -36,7 +36,7 @@ ecm_setup_version(PROJECT
  )
  
  # Dependencies
--set(REQUIRED_QT_VERSION 5.8.0)
+-set(REQUIRED_QT_VERSION 5.15.0)
 +set(REQUIRED_QT_VERSION 5.6.0)
  
  # Required Qt5 components to build this framework
  find_package(Qt5 ${REQUIRED_QT_VERSION} CONFIG REQUIRED Core DBus Network)
-diff --git a/src/imports/declarativedevicesmodel.cpp b/src/imports/declarativedevicesmodel.cpp
-index dfcd5f8..a7a2732 100644
---- a/src/imports/declarativedevicesmodel.cpp
-+++ b/src/imports/declarativedevicesmodel.cpp
-@@ -110,7 +110,6 @@ QVariant DeclarativeDevicesModel::data(const QModelIndex &index, int role) const
-             return QVariant::fromValue(device->mediaPlayer());
-         }
-         // fallthrough
--        Q_FALLTHROUGH();
-     default:
-         return QSortFilterProxyModel::data(index, role);
+@@ -111,4 +111,4 @@ endif()
+ 
+ feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+ 
+-kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
++#kde_configure_git_pre_commit_hook(CHECKS CLANG_FORMAT)
+diff --git a/src/adapter.cpp b/src/adapter.cpp
+index d59f985..27a27a9 100644
+--- a/src/adapter.cpp
++++ b/src/adapter.cpp
+@@ -11,6 +11,7 @@
+ #include "device.h"
+ #include "device_p.h"
+ #include "pendingcall.h"
++#include "utils.h"
+ 
+ namespace BluezQt
+ {
+diff --git a/src/gattcharacteristic.h b/src/gattcharacteristic.h
+index fdb3079..ff50e62 100644
+--- a/src/gattcharacteristic.h
++++ b/src/gattcharacteristic.h
+@@ -12,6 +12,8 @@
+ 
+ #include <QDBusObjectPath>
+ 
++#include <functional>
++
+ namespace BluezQt
+ {
+ class GattService;
+diff --git a/src/manager.cpp b/src/manager.cpp
+index 8a362f0..e5e00f9 100644
+--- a/src/manager.cpp
++++ b/src/manager.cpp
+@@ -231,7 +231,7 @@ PendingCall *Manager::unregisterProfile(Profile *profile)
+ #if BLUEZQT_BUILD_DEPRECATED_SINCE(5, 57)
+ MediaPtr Manager::media() const
+ {
+-    return usableAdapter() ? usableAdapter()->media() : nullptr;
++    return usableAdapter() ? usableAdapter()->media() : MediaPtr(nullptr);
+ }
+ #endif
+ 
+diff --git a/src/rfkill.cpp b/src/rfkill.cpp
+index 866bc4d..05f1af8 100644
+--- a/src/rfkill.cpp
++++ b/src/rfkill.cpp
+@@ -10,6 +10,7 @@
+ #include "rfkill_p.h"
+ 
+ #include "debug.h"
++#include "utils.h"
+ 
+ #ifdef Q_OS_LINUX
+ #include <fcntl.h>
+diff --git a/src/utils.h b/src/utils.h
+index 8fc7846..cca8399 100644
+--- a/src/utils.h
++++ b/src/utils.h
+@@ -65,4 +65,10 @@ Device::Type appearanceToType(quint16 appearance);
+ 
+ } // namespace BluezQt
+ 
++template <class T>
++constexpr const T& qAsConst(T& t) noexcept
++{
++        return t;
++}
++
+ #endif // BLUEZQT_UTILS_H
+diff --git a/tools/bluezapi2qt/CppGenerator.cpp b/tools/bluezapi2qt/CppGenerator.cpp
+index 3723061..7f15362 100644
+--- a/tools/bluezapi2qt/CppGenerator.cpp
++++ b/tools/bluezapi2qt/CppGenerator.cpp
+@@ -186,7 +186,7 @@ QString CppGenerator::interfaceToClassName(const QString &interface)
+ {
+     const int index = interface.lastIndexOf(QRegularExpression(QStringLiteral("\\.[A-Z]\\w+"))) + 1;
+     auto className = interface.mid(index);
+-    while (className.back() > QLatin1Char('0') && className.back() <= QLatin1Char('9')) {
++    while (className[className.size() - 1] > QLatin1Char('0') && className[className.size() - 1] <= QLatin1Char('9')) {
+         className.remove(className.size() - 1, 1);
      }
--- 
-2.34.1
-
+ 
+diff --git a/tools/bluezapi2qt/Methods.cpp b/tools/bluezapi2qt/Methods.cpp
+index 8d9dcc1..86376d4 100644
+--- a/tools/bluezapi2qt/Methods.cpp
++++ b/tools/bluezapi2qt/Methods.cpp
+@@ -37,10 +37,13 @@ void Methods::parse(const QString &line)
+     if (match.hasMatch()) {
+         m_methods.emplace_back(Method());
+         m_currentMethod = &m_methods.back();
+-        m_currentMethod->m_outParameterStrings = match.captured(1).toLower().split(QStringLiteral(", "), Qt::SkipEmptyParts);
++        m_currentMethod->m_outParameterStrings = match.captured(1).toLower().split(QStringLiteral(", "));
++        m_currentMethod->m_outParameterStrings.removeAll(QString());
+         m_currentMethod->m_name = match.captured(2);
+-        m_currentMethod->m_inParameterStrings = match.captured(3).split(QStringLiteral(", "), Qt::SkipEmptyParts);
+-        m_currentMethod->m_stringTags = match.captured(4).toLower().split(QStringLiteral(", "), Qt::SkipEmptyParts);
++        m_currentMethod->m_inParameterStrings = match.captured(3).split(QStringLiteral(", "));
++        m_currentMethod->m_inParameterStrings.removeAll(QString());
++        m_currentMethod->m_stringTags = match.captured(4).toLower().split(QStringLiteral(", "));
++        m_currentMethod->m_stringTags.removeAll(QString());
+         m_currentMethod->m_limitation = match.captured(5).toLower();
+     } else if (m_currentMethod) {
+         // Skip first empty line
+diff --git a/tools/bluezapi2qt/Properties.cpp b/tools/bluezapi2qt/Properties.cpp
+index 8fe05a0..87c97bc 100644
+--- a/tools/bluezapi2qt/Properties.cpp
++++ b/tools/bluezapi2qt/Properties.cpp
+@@ -34,7 +34,9 @@ void Properties::parse(const QString &line)
+         m_currentProperty = &m_properties.back();
+         m_currentProperty->m_type = match.captured(1).toLower();
+         m_currentProperty->m_name = match.captured(2);
+-        m_currentProperty->m_stringTags = match.captured(3).toLower().split(QStringLiteral(", "), Qt::SkipEmptyParts);
++        auto temp = match.captured(3).toLower().split(QStringLiteral(", "));
++        temp.removeAll(QString());
++        m_currentProperty->m_stringTags = temp;
+         m_currentProperty->m_limitation = match.captured(4).toLower();
+     } else if (m_currentProperty) {
+         // Skip first empty line

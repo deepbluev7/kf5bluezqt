@@ -22,9 +22,9 @@ index 9b6c6f3..bdbe70d 100644
  #define PROPERTY_CHANGED(var, type_cast, signal) \
      if (var != value.type_cast()) { \
          var = value.type_cast(); \
--        Q_EMIT q.data()->signal(var); \
-+        if (q.data()) { \
-+            Q_EMIT q.data()->signal(var); \
+-        Q_EMIT q.lock()->signal(var); \
++        if (auto safe_q = q.lock()) { \
++            Q_EMIT safe_q->signal(var); \
 +        } \
      }
  
@@ -32,9 +32,9 @@ index 9b6c6f3..bdbe70d 100644
      const auto &val = value; \
      if (var != val) { \
          var = val; \
--        Q_EMIT q.data()->signal(var); \
-+        if (q.data()) { \
-+            Q_EMIT q.data()->signal(var); \
+-        Q_EMIT q.lock()->signal(var); \
++        if (auto safe_q = q.lock()) { \
++            Q_EMIT safe_q->signal(var); \
 +        } \
      }
  
@@ -42,9 +42,9 @@ index 9b6c6f3..bdbe70d 100644
  #define PROPERTY_INVALIDATED(var, empty, signal) \
      if (var != empty) { \
          var = empty; \
--        Q_EMIT q.data()->signal(var); \
-+        if (q.data()) { \
-+            Q_EMIT q.data()->signal(var); \
+-        Q_EMIT q.lock()->signal(var); \
++        if (auto safe_q = q.lock()) { \
++            Q_EMIT safe_q->signal(var); \
 +        } \
      }
  
